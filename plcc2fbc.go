@@ -36,7 +36,7 @@ import (
 const (
 	plccAPIURL   = "https://access.redhat.com/product-life-cycles/api/v2/products"
 	plccPageSize = 500
-	fbcSchema    = "io.openshift.packages.lifecycles.v1alpha1"
+	fbcSchema    = "io.openshift.operators.lifecycles.v1alpha1"
 )
 
 var majorMinorRegex = regexp.MustCompile(`^\d+\.\d+$`)

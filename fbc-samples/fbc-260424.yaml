@@ -1,5 +1,5 @@
 package: advanced-cluster-management
-schema: io.openshift.packages.lifecycles.v1alpha1
+schema: io.openshift.operators.lifecycles.v1alpha1
 versions:
 - name: "2.0"
   phases:
@@ -211,7 +211,7 @@ versions:
     timeEnd: "2027-09-10"
 ---
 package: ansible-automation-platform-operator
-schema: io.openshift.packages.lifecycles.v1alpha1
+schema: io.openshift.operators.lifecycles.v1alpha1
 versions:
 - name: "1.2"
   phases:
@@ -312,7 +312,7 @@ versions:
     timeEnd: "2028-10-01"
 ---
 package: businessautomation-operator
-schema: io.openshift.packages.lifecycles.v1alpha1
+schema: io.openshift.operators.lifecycles.v1alpha1
 versions:
 - name: "7.0"
   phases:
@@ -327,7 +327,7 @@ versions:
     timeEnd: "2026-05-31"
 ---
 package: fuse-apicurito
-schema: io.openshift.packages.lifecycles.v1alpha1
+schema: io.openshift.operators.lifecycles.v1alpha1
 versions:
 - name: "7.13"
   openshiftCompatibility:
@@ -352,7 +352,7 @@ versions:
     timeEnd: "2027-06-30"
 ---
 package: fuse-console
-schema: io.openshift.packages.lifecycles.v1alpha1
+schema: io.openshift.operators.lifecycles.v1alpha1
 versions:
 - name: "1.13"
   openshiftCompatibility:
@@ -377,7 +377,7 @@ versions:
     timeEnd: "2027-06-30"
 ---
 package: fuse-online
-schema: io.openshift.packages.lifecycles.v1alpha1
+schema: io.openshift.operators.lifecycles.v1alpha1
 versions:
 - name: "1.12"
   openshiftCompatibility:
@@ -391,7 +391,7 @@ versions:
     timeEnd: "2024-06-30"
 ---
 package: kernel-module-management-hub
-schema: io.openshift.packages.lifecycles.v1alpha1
+schema: io.openshift.operators.lifecycles.v1alpha1
 versions:
 - name: "1.1"
   openshiftCompatibility:
@@ -501,7 +501,7 @@ versions:
     timeEnd: "2026-10-24"
 ---
 package: klusterlet-product
-schema: io.openshift.packages.lifecycles.v1alpha1
+schema: io.openshift.operators.lifecycles.v1alpha1
 versions:
 - name: "2.0"
   phases:
@@ -553,7 +553,7 @@ versions:
     timeEnd: "2025-09-23"
 ---
 package: mtr-operator
-schema: io.openshift.packages.lifecycles.v1alpha1
+schema: io.openshift.operators.lifecycles.v1alpha1
 versions:
 - name: "1.0"
   phases:
@@ -572,7 +572,7 @@ versions:
     timeEnd: "2024-09-30"
 ---
 package: odf-multicluster-orchestrator
-schema: io.openshift.packages.lifecycles.v1alpha1
+schema: io.openshift.operators.lifecycles.v1alpha1
 versions:
 - name: "4.12"
   openshiftCompatibility:
@@ -693,7 +693,7 @@ versions:
     timeEnd: "2028-11-21"
 ---
 package: odr-cluster-operator
-schema: io.openshift.packages.lifecycles.v1alpha1
+schema: io.openshift.operators.lifecycles.v1alpha1
 versions:
 - name: "4.12"
   openshiftCompatibility:
@@ -814,7 +814,7 @@ versions:
     timeEnd: "2028-11-21"
 ---
 package: odr-hub-operator
-schema: io.openshift.packages.lifecycles.v1alpha1
+schema: io.openshift.operators.lifecycles.v1alpha1
 versions:
 - name: "4.12"
   openshiftCompatibility:
@@ -935,7 +935,7 @@ versions:
     timeEnd: "2028-11-21"
 ---
 package: red-hat-hawtio-operator
-schema: io.openshift.packages.lifecycles.v1alpha1
+schema: io.openshift.operators.lifecycles.v1alpha1
 versions:
 - name: "1.3"
   openshiftCompatibility:
@@ -959,7 +959,7 @@ versions:
     timeEnd: "2030-10-30"
 ---
 package: rh-service-binding-operator
-schema: io.openshift.packages.lifecycles.v1alpha1
+schema: io.openshift.operators.lifecycles.v1alpha1
 versions:
 - name: "1.3"
   openshiftCompatibility:
@@ -973,7 +973,7 @@ versions:
     timeEnd: "2025-08-27"
 ---
 package: rhacs-operator
-schema: io.openshift.packages.lifecycles.v1alpha1
+schema: io.openshift.operators.lifecycles.v1alpha1
 versions:
 - name: "3.67"
   phases:
@@ -1151,7 +1151,7 @@ versions:
     timeEnd: "2027-01-04"
 ---
 package: rhpam-kogito-operator
-schema: io.openshift.packages.lifecycles.v1alpha1
+schema: io.openshift.operators.lifecycles.v1alpha1
 versions:
 - name: "7.0"
   phases:
@@ -1166,7 +1166,7 @@ versions:
     timeEnd: "2026-05-31"
 ---
 package: tang-operator
-schema: io.openshift.packages.lifecycles.v1alpha1
+schema: io.openshift.operators.lifecycles.v1alpha1
 versions:
 - name: "1.0"
   openshiftCompatibility:
