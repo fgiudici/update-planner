@@ -10,5 +10,6 @@ plcc2fbc:
 
 .PHONY: generate-fbc
 generate-fbc: plcc2fbc
-	bin/plcc2fbc --output fbc-samples/fbc-$(DATE).yaml
+	bin/plcc2fbc --output fbc-samples/fbc-$(DATE).yaml 2>fbc-samples/fbc-$(DATE).log
 	cp -f fbc-samples/fbc-$(DATE).yaml fbc-samples/fbc-latest.yaml
+	cp -f fbc-samples/fbc-$(DATE).log fbc-samples/fbc-latest.log
