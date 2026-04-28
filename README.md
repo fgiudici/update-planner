@@ -31,4 +31,5 @@ Writes `fbc-samples/fbc-YYMMDD.yaml` and updates `fbc-samples/fbc-latest.yaml`.
 
 ## Documentation
 
-- [Validation Rules](VALIDATION_RULES.md)
+- [Validation Rules](docs/VALIDATION_RULES.md)
+- [FBC Lifecycle Schema](docs/FBC_SCHEMA.md)
