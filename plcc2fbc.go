@@ -74,15 +74,20 @@ type FBCBlob struct {
 }
 
 type FBCVersion struct {
-	Name                   string     `json:"name"`
-	Phases                 []FBCPhase `json:"phases"`
-	OpenShiftCompatibility []string   `json:"openshiftCompatibility,omitempty"`
+	Name                  string     `json:"name"`
+	Phases                []FBCPhase `json:"phases"`
+	PlatformCompatibility []Platform `json:"platformCompatibility,omitempty"`
 }
 
 type FBCPhase struct {
 	Name      string `json:"name"`
 	TimeBegin string `json:"timeBegin"`
 	TimeEnd   string `json:"timeEnd"`
+}
+
+type Platform struct {
+	Name     string   `json:"name"`
+	Versions []string `json:"versions"`
 }
 
 func main() {
@@ -447,6 +452,7 @@ func convertVersion(v PLCCVersion) (*FBCVersion, error) {
 	}
 
 	if v.OpenShiftCompatibility != "" && v.OpenShiftCompatibility != "N/A" {
+		var ocpVersions []string
 		parts := strings.Split(v.OpenShiftCompatibility, ",")
 		for _, p := range parts {
 			trimmed := strings.TrimSpace(p)
@@ -456,7 +462,13 @@ func convertVersion(v PLCCVersion) (*FBCVersion, error) {
 			if !majorMinorRegex.MatchString(trimmed) {
 				return nil, fmt.Errorf("OCP compatibility %q is not MAJOR.MINOR", trimmed)
 			}
-			fv.OpenShiftCompatibility = append(fv.OpenShiftCompatibility, trimmed)
+			ocpVersions = append(ocpVersions, trimmed)
+		}
+		if len(ocpVersions) > 0 {
+			fv.PlatformCompatibility = []Platform{{
+				Name:     "openshift",
+				Versions: ocpVersions,
+			}}
 		}
 	}
 

@@ -17,7 +17,7 @@ package: "aws-efs-csi-driver-operator"                # [MAPPED] from product.pa
 # link: "https://access.redhat.com/support/policy/updates/openshift_operators"  # [UNMAPPED] lifecycle policy URL
 # formerNames:                                        # [DROPPED] historical, not actionable
 #   - "AWS EFS CSI Driver Operator"
-# uuid: "c40e2148-..."                               # [DROPPED] PLCC internal ID
+# uuid: "c40e2148-..."                                # [DROPPED] PLCC internal ID
 # oplUuid: "5e9ef9d3-..."                             # [DROPPED] cross-reference to OPL
 # isLayeredProduct: true                              # [DROPPED] PLCC display concern
 # showFinalMinorRelease: false                        # [DROPPED] PLCC display concern
@@ -35,13 +35,15 @@ package: "aws-efs-csi-driver-operator"                # [MAPPED] from product.pa
 versions:
   # Version 4.12 — fully populated EUS release
   - name: "4.12"                                      # [MAPPED] validated as MAJOR.MINOR
-    # type: "Extended Support"                         # [UNMAPPED] overall version lifecycle status
-    # tier: "Aligned"                                  # [UNMAPPED] lifecycle tier (REQ-TIER-ALL-02)
-    # finalMinorRelease: null                          # [DROPPED] not relevant to lifecycle phases
-    # additionalText: ""                               # [UNMAPPED] per-release notes (REQ-FIELD-03)
-    # extraDependences: []                             # [DROPPED] non-operator dependency info
-    openshiftCompatibility:                            # [MAPPED] split from comma-separated string
-      - "4.12"
+    # type: "Extended Support"                        # [UNMAPPED] overall version lifecycle status
+    # tier: "Aligned"                                 # [UNMAPPED] lifecycle tier (REQ-TIER-ALL-02)
+    # finalMinorRelease: null                         # [DROPPED] not relevant to lifecycle phases
+    # additionalText: ""                              # [UNMAPPED] per-release notes (REQ-FIELD-03)
+    # extraDependences: []                            # [DROPPED] non-operator dependency info
+    platformCompatibility:                            # [MAPPED] from comma-separated openshift_compatibility
+      - name: "openshift"
+        versions:
+          - "4.12"
     phases:
       # "General availability" phase — filtered out (point-in-time, start=N/A)
       # Original PLCC data:
@@ -79,8 +81,10 @@ versions:
   - name: "4.17"                                       # [MAPPED]
     # type: "End of life"                              # [UNMAPPED]
     # tier: "Aligned"                                  # [UNMAPPED]
-    openshiftCompatibility:                            # [MAPPED]
-      - "4.17"
+    platformCompatibility:                             # [MAPPED]
+      - name: "openshift"
+        versions:
+          - "4.17"
     phases:
       # "General availability" — filtered out (point-in-time)
       # "Extended update support" — filtered out (N/A-N/A)
@@ -99,8 +103,10 @@ versions:
   - name: "4.20"                                       # [MAPPED]
     # type: "Full Support"                             # [UNMAPPED]
     # tier: "Aligned"                                  # [UNMAPPED]
-    openshiftCompatibility:                            # [MAPPED]
-      - "4.20"
+    platformCompatibility:                             # [MAPPED]
+      - name: "openshift"
+        versions:
+          - "4.20"
     phases:
       # "General availability" — filtered out (point-in-time)
       # "Extended update support Term 3" — filtered out (N/A-N/A)
