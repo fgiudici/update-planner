@@ -1,0 +1,122 @@
+# FBC io.openshift.operators.lifecycles.v1alpha1
+# Applied to: AWS EFS CSI driver operator (from plcc-schema-example.yaml)
+#
+# Fields marked [MAPPED] are currently used by plcc2fbc.
+# Fields marked [UNMAPPED] exist in PLCC but are not carried into FBC today.
+# Fields marked [DROPPED] are PLCC-internal and not relevant for FBC.
+
+# --- FBC root (required by FBC spec) ---
+schema: "io.openshift.operators.lifecycles.v1alpha1"  # [MAPPED] hardcoded constant
+package: "aws-efs-csi-driver-operator"                # [MAPPED] from product.package
+
+# --- Product-level PLCC fields not currently in FBC ---
+# name: "AWS EFS CSI driver operator"                 # [UNMAPPED] human-readable product name
+# isOperator: true                                    # [UNMAPPED] explicit operator flag
+# isRetired: false                                    # [UNMAPPED] retirement status
+# releaseCadence: "4 months"                          # [UNMAPPED] release frequency (REQ-TIER-ALL-01)
+# link: "https://access.redhat.com/support/policy/updates/openshift_operators"  # [UNMAPPED] lifecycle policy URL
+# formerNames:                                        # [DROPPED] historical, not actionable
+#   - "AWS EFS CSI Driver Operator"
+# uuid: "c40e2148-..."                               # [DROPPED] PLCC internal ID
+# oplUuid: "5e9ef9d3-..."                             # [DROPPED] cross-reference to OPL
+# isLayeredProduct: true                              # [DROPPED] PLCC display concern
+# showFinalMinorRelease: false                        # [DROPPED] PLCC display concern
+# showOpenshiftCompatibility: true                    # [DROPPED] PLCC display concern
+# policies: ""                                        # [DROPPED] URL, not structured data
+# footnote: ""                                        # [DROPPED] HTML, not structured data
+# productExtraHeaders: []                             # [DROPPED] PLCC display concern
+# allPhases:                                          # [DROPPED] phase templates, actual phases are in versions
+#   - name: "General availability"
+#     ptype: "normal"
+#     displayName: "General availability"
+#     tooltip: null
+#     additionalText: ""
+
+versions:
+  # Version 4.12 — fully populated EUS release
+  - name: "4.12"                                      # [MAPPED] validated as MAJOR.MINOR
+    # type: "Extended Support"                         # [UNMAPPED] overall version lifecycle status
+    # tier: "Aligned"                                  # [UNMAPPED] lifecycle tier (REQ-TIER-ALL-02)
+    # finalMinorRelease: null                          # [DROPPED] not relevant to lifecycle phases
+    # additionalText: ""                               # [UNMAPPED] per-release notes (REQ-FIELD-03)
+    # extraDependences: []                             # [DROPPED] non-operator dependency info
+    openshiftCompatibility:                            # [MAPPED] split from comma-separated string
+      - "4.12"
+    phases:
+      # "General availability" phase — filtered out (point-in-time, start=N/A)
+      # Original PLCC data:
+      #   name: "General availability"
+      #   startDate: "N/A"                             # unset
+      #   endDate: "2023-01-17T00:00:00.000Z"
+      #   startDateFormat: "string"                    # [UNMAPPED] date format indicator
+      #   endDateFormat: "date"                        # [UNMAPPED] date format indicator
+      #   additionalText: ""                           # [UNMAPPED] per-phase notes
+
+      - name: "Full support"                           # [MAPPED]
+        timeBegin: "2023-01-17"                        # [MAPPED] reformatted from ISO 8601
+        timeEnd: "2023-08-17"                          # [MAPPED] reformatted from ISO 8601
+        # startDateFormat: "date"                      # [UNMAPPED] date format indicator
+        # endDateFormat: "date"                        # [UNMAPPED] date format indicator
+        # additionalText: ""                           # [UNMAPPED] per-phase notes
+
+      - name: "Maintenance support"                    # [MAPPED]
+        timeBegin: "2023-08-18"                        # [MAPPED]
+        timeEnd: "2024-07-17"                          # [MAPPED]
+
+      - name: "Extended update support"                # [MAPPED]
+        timeBegin: "2024-07-18"                        # [MAPPED]
+        timeEnd: "2025-01-17"                          # [MAPPED]
+
+      - name: "Extended update support Term 2"         # [MAPPED]
+        timeBegin: "2025-01-18"                        # [MAPPED]
+        timeEnd: "2026-01-17"                          # [MAPPED]
+
+      - name: "Extended update support Term 3"         # [MAPPED]
+        timeBegin: "2026-01-18"                        # [MAPPED]
+        timeEnd: "2027-01-17"                          # [MAPPED]
+
+  # Version 4.17 — non-EUS release (EUS phases filtered out as N/A-N/A)
+  - name: "4.17"                                       # [MAPPED]
+    # type: "End of life"                              # [UNMAPPED]
+    # tier: "Aligned"                                  # [UNMAPPED]
+    openshiftCompatibility:                            # [MAPPED]
+      - "4.17"
+    phases:
+      # "General availability" — filtered out (point-in-time)
+      # "Extended update support" — filtered out (N/A-N/A)
+      # "Extended update support Term 2" — filtered out (N/A-N/A)
+      # "Extended update support Term 3" — filtered out (N/A-N/A)
+
+      - name: "Full support"                           # [MAPPED]
+        timeBegin: "2024-10-01"                        # [MAPPED]
+        timeEnd: "2025-05-25"                          # [MAPPED]
+
+      - name: "Maintenance support"                    # [MAPPED]
+        timeBegin: "2025-05-26"                        # [MAPPED]
+        timeEnd: "2026-04-01"                          # [MAPPED]
+
+  # Version 4.20 — current, in full support, partial EUS
+  - name: "4.20"                                       # [MAPPED]
+    # type: "Full Support"                             # [UNMAPPED]
+    # tier: "Aligned"                                  # [UNMAPPED]
+    openshiftCompatibility:                            # [MAPPED]
+      - "4.20"
+    phases:
+      # "General availability" — filtered out (point-in-time)
+      # "Extended update support Term 3" — filtered out (N/A-N/A)
+
+      - name: "Full support"                           # [MAPPED]
+        timeBegin: "2025-10-21"                        # [MAPPED]
+        timeEnd: "2026-05-03"                          # [MAPPED]
+
+      - name: "Maintenance support"                    # [MAPPED]
+        timeBegin: "2026-05-03"                        # [MAPPED]
+        timeEnd: "2027-04-21"                          # [MAPPED]
+
+      - name: "Extended update support"                # [MAPPED]
+        timeBegin: "2027-04-22"                        # [MAPPED]
+        timeEnd: "2027-10-21"                          # [MAPPED]
+
+      - name: "Extended update support Term 2"         # [MAPPED]
+        timeBegin: "2027-10-22"                        # [MAPPED]
+        timeEnd: "2028-10-21"                          # [MAPPED]
