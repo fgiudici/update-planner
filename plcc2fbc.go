@@ -93,9 +93,11 @@ type Platform struct {
 func main() {
 	var outputPath string
 	var plccDumpPath string
+	var plccInputPath string
 
 	flag.StringVar(&outputPath, "output", "", "path to write FBC YAML output (default: stdout)")
 	flag.StringVar(&plccDumpPath, "plcc-dump", "", "path to write filtered PLCC entries (packages only) as JSON")
+	flag.StringVar(&plccInputPath, "plcc-input", "", "path to read PLCC JSON input (default: fetch from API)")
 	flag.Parse()
 
 	output := os.Stdout
@@ -108,9 +110,15 @@ func main() {
 		output = f
 	}
 
-	products, err := fetchPLCC()
+	var products []PLCCProduct
+	var err error
+	if plccInputPath != "" {
+		products, err = loadPLCC(plccInputPath)
+	} else {
+		products, err = fetchPLCC()
+	}
 	if err != nil {
-		log.Fatalf("failed to fetch PLCC data: %v", err)
+		log.Fatalf("failed to load PLCC data: %v", err)
 	}
 
 	log.Printf("fetched %d products from PLCC", len(products))
@@ -269,6 +277,18 @@ func fetchPLCC() ([]PLCCProduct, error) {
 		page++
 	}
 	return all, nil
+}
+
+func loadPLCC(path string) ([]PLCCProduct, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("reading PLCC file: %w", err)
+	}
+	var plccResp PLCCResponse
+	if err := json.Unmarshal(data, &plccResp); err != nil {
+		return nil, fmt.Errorf("decoding PLCC file: %w", err)
+	}
+	return plccResp.Data, nil
 }
 
 type ValidationResult struct {
