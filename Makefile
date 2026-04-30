@@ -8,6 +8,10 @@ build: plcc2fbc
 plcc2fbc:
 	go build $(GOFLAGS) -o bin/plcc2fbc 
 
+.PHONY: test
+test:
+	go test -v ./...
+
 .PHONY: generate-fbc
 generate-fbc: plcc2fbc
 	bin/plcc2fbc --output fbc-samples/fbc-$(DATE).yaml 2>fbc-samples/fbc-$(DATE).log
