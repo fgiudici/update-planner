@@ -141,14 +141,30 @@ func main() {
 		log.Printf("wrote %d PLCC entries to %s", len(withPackage), plccDumpPath)
 	}
 
-	// Group by package name; detect duplicates
+	blobCount := generateFBC(withPackage, output, os.Stderr)
+	log.Printf("wrote %d FBC blobs", blobCount)
+}
+
+func writePLCCDump(path string, products []PLCCProduct) error {
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	enc := json.NewEncoder(f)
+	enc.SetIndent("", "  ")
+	return enc.Encode(products)
+}
+
+func generateFBC(products []PLCCProduct, output io.Writer, logOutput io.Writer) int {
 	type packageEntry struct {
 		product    PLCCProduct
 		ambiguous  bool
 		otherNames []string
 	}
 	byPackage := make(map[string]*packageEntry)
-	for _, p := range withPackage {
+	for _, p := range products {
 		if entry, ok := byPackage[p.Package]; ok {
 			entry.ambiguous = true
 			entry.otherNames = append(entry.otherNames, p.Name)
@@ -157,17 +173,13 @@ func main() {
 		}
 	}
 
-	// Sort package names for deterministic output
 	packageNames := make([]string, 0, len(byPackage))
 	for name := range byPackage {
 		packageNames = append(packageNames, name)
 	}
 	sort.Strings(packageNames)
 
-	log.Printf("found %d distinct packages", len(packageNames))
-
-	// Validate all packages and versions, emitting structured JSON logs
-	logEnc := json.NewEncoder(os.Stderr)
+	logEnc := json.NewEncoder(logOutput)
 	blobCount := 0
 	for _, pkgName := range packageNames {
 		entry := byPackage[pkgName]
@@ -190,7 +202,6 @@ func main() {
 			continue
 		}
 
-		// Validate each version, collecting results
 		packageValid := true
 		for _, v := range entry.product.Versions {
 			reasons := validateVersion(v)
@@ -228,19 +239,7 @@ func main() {
 		blobCount++
 	}
 
-	log.Printf("wrote %d FBC blobs", blobCount)
-}
-
-func writePLCCDump(path string, products []PLCCProduct) error {
-	f, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	enc := json.NewEncoder(f)
-	enc.SetIndent("", "  ")
-	return enc.Encode(products)
+	return blobCount
 }
 
 func fetchPLCC() ([]PLCCProduct, error) {
