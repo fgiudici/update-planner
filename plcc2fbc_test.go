@@ -21,23 +21,21 @@ import (
 	"io"
 	"os"
 	"testing"
+
+	"github.com/fgiudici/update-planner/plcc"
 )
 
 func TestGoldenFile(t *testing.T) {
-	products, err := loadPLCC("testdata/plcc.json")
+	catalog, err := plcc.Load("testdata/plcc.json")
 	if err != nil {
 		t.Fatalf("loading PLCC test data: %v", err)
 	}
 
-	var withPackage []PLCCProduct
-	for _, p := range products {
-		if p.Package != "" {
-			withPackage = append(withPackage, p)
-		}
-	}
+	catalog.FilterPackages()
+	catalog.SortByPackage()
 
 	var buf bytes.Buffer
-	generateFBC(withPackage, &buf, io.Discard)
+	generateFBC(catalog.Data, &buf, io.Discard)
 
 	want, err := os.ReadFile("testdata/golden-fbc.yaml")
 	if err != nil {
