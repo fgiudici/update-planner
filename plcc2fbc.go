@@ -22,48 +22,19 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net/http"
 	"os"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/fgiudici/update-planner/plcc"
 	"sigs.k8s.io/yaml"
 )
 
 const (
-	plccAPIURL   = "https://access.redhat.com/product-life-cycles/api/v2/products"
-	plccPageSize = 500
-	fbcSchema    = "io.openshift.operators.lifecycles.v1alpha1"
+	fbcSchema = "io.openshift.operators.lifecycles.v1alpha1"
 )
-
-var majorMinorRegex = regexp.MustCompile(`^\d+\.\d+$`)
-
-// PLCC API types
-
-type PLCCResponse struct {
-	Data []PLCCProduct `json:"data"`
-}
-
-type PLCCProduct struct {
-	Name     string        `json:"name"`
-	Package  string        `json:"package"`
-	Versions []PLCCVersion `json:"versions"`
-}
-
-type PLCCVersion struct {
-	Name                   string      `json:"name"`
-	Phases                 []PLCCPhase `json:"phases"`
-	OpenShiftCompatibility string      `json:"openshift_compatibility"`
-}
-
-type PLCCPhase struct {
-	Name      string `json:"name"`
-	StartDate string `json:"start_date"`
-	EndDate   string `json:"end_date"`
-}
 
 // FBC output types
 
@@ -110,56 +81,36 @@ func main() {
 		output = f
 	}
 
-	var products []PLCCProduct
+	var catalog *plcc.Catalog
 	var err error
 	if plccInputPath != "" {
-		products, err = loadPLCC(plccInputPath)
+		catalog, err = plcc.Load(plccInputPath)
 	} else {
-		products, err = fetchPLCC()
+		catalog, err = plcc.Fetch()
 	}
 	if err != nil {
 		log.Fatalf("failed to load PLCC data: %v", err)
 	}
 
-	log.Printf("fetched %d products from PLCC", len(products))
+	log.Printf("fetched %d products from PLCC", len(catalog.Data))
 
-	// Filter to products with a package name, sorted by package
-	var withPackage []PLCCProduct
-	for _, p := range products {
-		if p.Package != "" {
-			withPackage = append(withPackage, p)
-		}
-	}
-	sort.Slice(withPackage, func(i, j int) bool {
-		return withPackage[i].Package < withPackage[j].Package
-	})
+	catalog.FilterPackages()
+	catalog.SortByPackage()
 
 	if plccDumpPath != "" {
-		if err := writePLCCDump(plccDumpPath, withPackage); err != nil {
+		if err := catalog.Dump(plccDumpPath); err != nil {
 			log.Fatalf("failed to write PLCC dump: %v", err)
 		}
-		log.Printf("wrote %d PLCC entries to %s", len(withPackage), plccDumpPath)
+		log.Printf("wrote %d PLCC entries to %s", len(catalog.Data), plccDumpPath)
 	}
 
-	blobCount := generateFBC(withPackage, output, os.Stderr)
+	blobCount := generateFBC(catalog.Data, output, os.Stderr)
 	log.Printf("wrote %d FBC blobs", blobCount)
 }
 
-func writePLCCDump(path string, products []PLCCProduct) error {
-	f, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	enc := json.NewEncoder(f)
-	enc.SetIndent("", "  ")
-	return enc.Encode(products)
-}
-
-func generateFBC(products []PLCCProduct, output io.Writer, logOutput io.Writer) int {
+func generateFBC(products []plcc.Product, output io.Writer, logOutput io.Writer) int {
 	type packageEntry struct {
-		product    PLCCProduct
+		product    plcc.Product
 		ambiguous  bool
 		otherNames []string
 	}
@@ -185,7 +136,7 @@ func generateFBC(products []PLCCProduct, output io.Writer, logOutput io.Writer) 
 		entry := byPackage[pkgName]
 
 		if entry.ambiguous {
-			logEnc.Encode(ValidationResult{
+			logEnc.Encode(plcc.ValidationResult{
 				PackageName: pkgName,
 				Valid:       false,
 				Reasons:     []string{fmt.Sprintf("package appears in multiple products: %v", append([]string{entry.product.Name}, entry.otherNames...))},
@@ -194,7 +145,7 @@ func generateFBC(products []PLCCProduct, output io.Writer, logOutput io.Writer) 
 		}
 
 		if len(entry.product.Versions) == 0 {
-			logEnc.Encode(ValidationResult{
+			logEnc.Encode(plcc.ValidationResult{
 				PackageName: pkgName,
 				Valid:       false,
 				Reasons:     []string{"package has no versions"},
@@ -204,9 +155,9 @@ func generateFBC(products []PLCCProduct, output io.Writer, logOutput io.Writer) 
 
 		packageValid := true
 		for _, v := range entry.product.Versions {
-			reasons := validateVersion(v)
+			reasons := plcc.ValidateVersion(v)
 			valid := len(reasons) == 0
-			logEnc.Encode(ValidationResult{
+			logEnc.Encode(plcc.ValidationResult{
 				PackageName: pkgName,
 				Version:     v.Name,
 				Valid:       valid,
@@ -224,7 +175,7 @@ func generateFBC(products []PLCCProduct, output io.Writer, logOutput io.Writer) 
 		blob, _ := buildFBCBlob(entry.product)
 		yamlBytes, err := yaml.Marshal(blob)
 		if err != nil {
-			logEnc.Encode(ValidationResult{
+			logEnc.Encode(plcc.ValidationResult{
 				PackageName: pkgName,
 				Valid:       false,
 				Reasons:     []string{fmt.Sprintf("failed to marshal YAML: %v", err)},
@@ -242,198 +193,7 @@ func generateFBC(products []PLCCProduct, output io.Writer, logOutput io.Writer) 
 	return blobCount
 }
 
-func fetchPLCC() ([]PLCCProduct, error) {
-	var all []PLCCProduct
-	page := 1
-	for {
-		url := fmt.Sprintf("%s?page_size=%d&page=%d", plccAPIURL, plccPageSize, page)
-		resp, err := http.Get(url)
-		if err != nil {
-			return nil, fmt.Errorf("HTTP request failed: %w", err)
-		}
-		body, err := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		if err != nil {
-			return nil, fmt.Errorf("reading response body: %w", err)
-		}
-		if resp.StatusCode != http.StatusOK {
-			return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
-		}
-
-		var plccResp PLCCResponse
-		if err := json.Unmarshal(body, &plccResp); err != nil {
-			return nil, fmt.Errorf("decoding response: %w", err)
-		}
-
-		if len(plccResp.Data) == 0 {
-			break
-		}
-		all = append(all, plccResp.Data...)
-
-		if len(plccResp.Data) < plccPageSize {
-			break
-		}
-		page++
-	}
-	return all, nil
-}
-
-func loadPLCC(path string) ([]PLCCProduct, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("reading PLCC file: %w", err)
-	}
-	var plccResp PLCCResponse
-	if err := json.Unmarshal(data, &plccResp); err != nil {
-		return nil, fmt.Errorf("decoding PLCC file: %w", err)
-	}
-	return plccResp.Data, nil
-}
-
-type ValidationResult struct {
-	PackageName string   `json:"packageName"`
-	Version     string   `json:"version,omitempty"`
-	Valid       bool     `json:"valid"`
-	Reasons     []string `json:"reasons,omitempty"`
-}
-
-func validateVersion(v PLCCVersion) []string {
-	var reasons []string
-
-	if !majorMinorRegex.MatchString(v.Name) {
-		reasons = append(reasons, fmt.Sprintf("version name %q is not MAJOR.MINOR", v.Name))
-	}
-
-	// Validate OCP compatibility
-	if v.OpenShiftCompatibility != "" && v.OpenShiftCompatibility != "N/A" {
-		for _, p := range strings.Split(v.OpenShiftCompatibility, ",") {
-			trimmed := strings.TrimSpace(p)
-			if trimmed != "" && !majorMinorRegex.MatchString(trimmed) {
-				reasons = append(reasons, fmt.Sprintf("OCP compatibility %q is not MAJOR.MINOR", trimmed))
-			}
-		}
-	}
-
-	// Filter and validate phases
-	filtered, filterReasons := filterPhases(v.Phases)
-	reasons = append(reasons, filterReasons...)
-
-	if len(filtered) == 0 && len(filterReasons) == 0 {
-		reasons = append(reasons, "no phases after filtering")
-		return reasons
-	}
-
-	type parsedPhase struct {
-		name       string
-		start, end time.Time
-	}
-	var parsed []parsedPhase
-	for _, ph := range filtered {
-		start, errS := parseTimestamp(ph.StartDate)
-		end, errE := parseTimestamp(ph.EndDate)
-		if errS != nil {
-			reasons = append(reasons, fmt.Sprintf("phase %q start_date: %v", ph.Name, errS))
-		}
-		if errE != nil {
-			reasons = append(reasons, fmt.Sprintf("phase %q end_date: %v", ph.Name, errE))
-		}
-		if errS != nil || errE != nil {
-			continue
-		}
-		if !end.After(start) {
-			reasons = append(reasons, fmt.Sprintf("phase %q: end (%s) is not after start (%s)", ph.Name, formatDate(end), formatDate(start)))
-			continue
-		}
-		parsed = append(parsed, parsedPhase{name: ph.Name, start: start, end: end})
-	}
-
-	// Check continuity on successfully parsed phases
-	for i := 1; i < len(parsed); i++ {
-		expectedStart := parsed[i-1].end.AddDate(0, 0, 1)
-		if !parsed[i].start.Equal(expectedStart) {
-			reasons = append(reasons, fmt.Sprintf("phase %q start (%s) must be one day after previous phase %q end (%s)",
-				parsed[i].name, formatDate(parsed[i].start), parsed[i-1].name, formatDate(parsed[i-1].end)))
-		}
-	}
-
-	return reasons
-}
-
-// filterPhases removes discardable phases from the list:
-// 1. Phases where both start and end are unset ("N/A"/empty) — not applicable, discard.
-// 2. At most one point-in-time phase at the beginning, aligned with the first normal phase's start.
-// 3. At most one point-in-time phase at the end, aligned with the last normal phase's end.
-// 4. No other point-in-time phases are allowed.
-// Returns the filtered list (normal phases only) and any validation reasons.
-func filterPhases(phases []PLCCPhase) ([]PLCCPhase, []string) {
-	var reasons []string
-
-	// Separate into normal, point-in-time, and N/A-N/A phases with their original indices
-	type indexedPhase struct {
-		index int
-		phase PLCCPhase
-	}
-	var normal, pointInTime []indexedPhase
-	for i, ph := range phases {
-		startUnset := isUnset(ph.StartDate)
-		endUnset := isUnset(ph.EndDate)
-		switch {
-		case startUnset && endUnset:
-			// Discard silently
-		case !startUnset && !endUnset:
-			normal = append(normal, indexedPhase{i, ph})
-		default:
-			pointInTime = append(pointInTime, indexedPhase{i, ph})
-		}
-	}
-
-	if len(normal) == 0 {
-		if len(pointInTime) > 0 {
-			reasons = append(reasons, "no normal phases (with both start and end set)")
-		} else {
-			reasons = append(reasons, "no phases after filtering")
-		}
-		return nil, reasons
-	}
-
-	firstNormal := normal[0]
-	lastNormal := normal[len(normal)-1]
-
-	for _, pt := range pointInTime {
-		ph := pt.phase
-		if isUnset(ph.StartDate) {
-			// end is set — must be the one allowed point-in-time before the first normal phase
-			if pt.index < firstNormal.index && ph.EndDate == firstNormal.phase.StartDate {
-				continue // valid, discard
-			}
-		} else {
-			// start is set — must be the one allowed point-in-time after the last normal phase
-			if pt.index > lastNormal.index && ph.StartDate == lastNormal.phase.EndDate {
-				continue // valid, discard
-			}
-		}
-		// Invalid point-in-time
-		if isUnset(ph.StartDate) {
-			reasons = append(reasons, fmt.Sprintf("phase %q is point-in-time (start unset, end %s) not aligned with first normal phase start (%s) or not at the beginning",
-				ph.Name, ph.EndDate, firstNormal.phase.StartDate))
-		} else {
-			reasons = append(reasons, fmt.Sprintf("phase %q is point-in-time (start %s, end unset) not aligned with last normal phase end (%s) or not at the end",
-				ph.Name, ph.StartDate, lastNormal.phase.EndDate))
-		}
-	}
-
-	filtered := make([]PLCCPhase, len(normal))
-	for i, n := range normal {
-		filtered[i] = n.phase
-	}
-	return filtered, reasons
-}
-
-func isUnset(s string) bool {
-	return s == "" || s == "N/A"
-}
-
-func buildFBCBlob(product PLCCProduct) (*FBCBlob, error) {
+func buildFBCBlob(product plcc.Product) (*FBCBlob, error) {
 	blob := &FBCBlob{
 		Schema:  fbcSchema,
 		Package: product.Package,
@@ -447,7 +207,6 @@ func buildFBCBlob(product PLCCProduct) (*FBCBlob, error) {
 		blob.Versions = append(blob.Versions, *fbcVersion)
 	}
 
-	// Sort versions by semver ordering
 	sort.Slice(blob.Versions, func(i, j int) bool {
 		return compareMajorMinor(blob.Versions[i].Name, blob.Versions[j].Name) < 0
 	})
@@ -455,8 +214,8 @@ func buildFBCBlob(product PLCCProduct) (*FBCBlob, error) {
 	return blob, nil
 }
 
-func convertVersion(v PLCCVersion) (*FBCVersion, error) {
-	if !majorMinorRegex.MatchString(v.Name) {
+func convertVersion(v plcc.Version) (*FBCVersion, error) {
+	if !plcc.MajorMinorRegex.MatchString(v.Name) {
 		return nil, fmt.Errorf("name %q is not MAJOR.MINOR", v.Name)
 	}
 
@@ -478,7 +237,7 @@ func convertVersion(v PLCCVersion) (*FBCVersion, error) {
 			if trimmed == "" {
 				continue
 			}
-			if !majorMinorRegex.MatchString(trimmed) {
+			if !plcc.MajorMinorRegex.MatchString(trimmed) {
 				return nil, fmt.Errorf("OCP compatibility %q is not MAJOR.MINOR", trimmed)
 			}
 			ocpVersions = append(ocpVersions, trimmed)
@@ -494,8 +253,8 @@ func convertVersion(v PLCCVersion) (*FBCVersion, error) {
 	return fv, nil
 }
 
-func convertPhases(plccPhases []PLCCPhase) ([]FBCPhase, error) {
-	filtered, reasons := filterPhases(plccPhases)
+func convertPhases(plccPhases []plcc.Phase) ([]FBCPhase, error) {
+	filtered, reasons := plcc.FilterPhases(plccPhases)
 	if len(reasons) > 0 {
 		return nil, fmt.Errorf("%s", reasons[0])
 	}
@@ -505,26 +264,25 @@ func convertPhases(plccPhases []PLCCPhase) ([]FBCPhase, error) {
 
 	var fbcPhases []FBCPhase
 	for _, ph := range filtered {
-		start, err := parseTimestamp(ph.StartDate)
+		start, err := plcc.ParseTimestamp(ph.StartDate)
 		if err != nil {
 			return nil, fmt.Errorf("phase %q start_date: %w", ph.Name, err)
 		}
-		end, err := parseTimestamp(ph.EndDate)
+		end, err := plcc.ParseTimestamp(ph.EndDate)
 		if err != nil {
 			return nil, fmt.Errorf("phase %q end_date: %w", ph.Name, err)
 		}
 		if !end.After(start) {
-			return nil, fmt.Errorf("phase %q: end (%s) is not after start (%s)", ph.Name, formatDate(end), formatDate(start))
+			return nil, fmt.Errorf("phase %q: end (%s) is not after start (%s)", ph.Name, plcc.FormatDate(end), plcc.FormatDate(start))
 		}
 
 		fbcPhases = append(fbcPhases, FBCPhase{
 			Name:      ph.Name,
-			TimeBegin: formatDate(start),
-			TimeEnd:   formatDate(end),
+			TimeBegin: plcc.FormatDate(start),
+			TimeEnd:   plcc.FormatDate(end),
 		})
 	}
 
-	// Check continuity: phase1.end must equal phase2.start - 1 day
 	for i := 1; i < len(fbcPhases); i++ {
 		prevEnd, _ := time.Parse("2006-01-02", fbcPhases[i-1].TimeEnd)
 		currStart, _ := time.Parse("2006-01-02", fbcPhases[i].TimeBegin)
@@ -549,20 +307,4 @@ func compareMajorMinor(a, b string) int {
 	aMinor, _ := strconv.Atoi(aParts[1])
 	bMinor, _ := strconv.Atoi(bParts[1])
 	return aMinor - bMinor
-}
-
-func parseTimestamp(s string) (time.Time, error) {
-	if s == "N/A" || s == "" {
-		return time.Time{}, fmt.Errorf("timestamp is %q (unset)", s)
-	}
-	// Expected: "2007-06-01T00:00:00.000Z"
-	t, err := time.Parse("2006-01-02T15:04:05.000Z", s)
-	if err != nil {
-		return time.Time{}, fmt.Errorf("invalid ISO8601 timestamp %q: %w", s, err)
-	}
-	return t, nil
-}
-
-func formatDate(t time.Time) string {
-	return t.Format("2006-01-02")
 }
