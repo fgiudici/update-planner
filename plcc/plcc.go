@@ -113,6 +113,11 @@ func (c *Catalog) FilterPackages() {
 	c.Data = filtered
 }
 
+// Len returns the number of products currently in the catalog.
+func (c *Catalog) Len() int {
+	return len(c.Data)
+}
+
 // SortByPackage sorts products by package name in ascending order.
 func (c *Catalog) SortByPackage() {
 	sort.Slice(c.Data, func(i, j int) bool {
@@ -132,7 +137,6 @@ func (c *Catalog) Dump(path string) error {
 	enc.SetIndent("", "  ")
 	return enc.Encode(c.Data)
 }
-
 
 // ParseTimestamp parses an ISO8601 timestamp as used by the PLCC API (e.g. "2007-06-01T00:00:00.000Z").
 func ParseTimestamp(s string) (time.Time, error) {

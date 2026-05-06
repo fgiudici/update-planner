@@ -60,16 +60,16 @@ func main() {
 		log.Fatalf("failed to load PLCC data: %v", err)
 	}
 
-	log.Printf("fetched %d products from PLCC", len(catalog.Data))
-
+	log.Printf("fetched %d products from PLCC", catalog.Len())
 	catalog.FilterPackages()
+	log.Printf("found %d distinct packages", catalog.Len())
 	catalog.SortByPackage()
 
 	if plccDumpPath != "" {
 		if err := catalog.Dump(plccDumpPath); err != nil {
 			log.Fatalf("failed to write PLCC dump: %v", err)
 		}
-		log.Printf("wrote %d PLCC entries to %s", len(catalog.Data), plccDumpPath)
+		log.Printf("wrote %d PLCC entries to %s", catalog.Len(), plccDumpPath)
 	}
 
 	blobCount := generateFBC(catalog.Data, output, os.Stderr)
