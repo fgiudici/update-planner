@@ -114,6 +114,9 @@ func translatePhase(ph plcc.Phase) Phase {
 func compareMajorMinor(a, b string) int {
 	aParts := strings.SplitN(a, ".", 2)
 	bParts := strings.SplitN(b, ".", 2)
+	if len(aParts) < 2 || len(bParts) < 2 {
+		return strings.Compare(a, b)
+	}
 	aMajor, _ := strconv.Atoi(aParts[0])
 	bMajor, _ := strconv.Atoi(bParts[0])
 	if aMajor != bMajor {

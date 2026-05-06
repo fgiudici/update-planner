@@ -34,7 +34,7 @@ func main() {
 	var plccDumpPath string
 	var inputPath string
 
-	flag.StringVar(&outputPath, "o", "", "write FBC data to a file instead of stdout)")
+	flag.StringVar(&outputPath, "o", "", "write FBC data to a file instead of stdout")
 	flag.StringVar(&inputPath, "i", "", "read PLCC JSON input from a file instead of fetching from API")
 	flag.StringVar(&plccDumpPath, "dump-plcc", "", "dump filtered PLCC JSON to a file")
 	flag.Parse()
@@ -80,13 +80,9 @@ func generateFBC(products []plcc.Product, output io.Writer, logOutput io.Writer)
 	pipeline := fbc.DefaultFilters()
 
 	// Detect packages that appear in multiple products.
-	isDuplicate := make(map[string]bool)
+	pkgCount := make(map[string]int)
 	for _, p := range products {
-		if _, ok := isDuplicate[p.Package]; ok {
-			isDuplicate[p.Package] = true
-		} else {
-			isDuplicate[p.Package] = false
-		}
+		pkgCount[p.Package]++
 	}
 
 	logEnc := json.NewEncoder(logOutput)
@@ -94,7 +90,7 @@ func generateFBC(products []plcc.Product, output io.Writer, logOutput io.Writer)
 	blobCount := 0
 	for _, product := range products {
 		// Skip ambiguous packages.
-		if isDuplicate[product.Package] {
+		if pkgCount[product.Package] > 1 {
 			if !alreadyLogged[product.Package] {
 				logEnc.Encode(plcc.ValidationResult{
 					PackageName: product.Package,

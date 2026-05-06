@@ -73,13 +73,13 @@ func Fetch() (*Catalog, error) {
 	if err != nil {
 		return nil, fmt.Errorf("HTTP request failed: %w", err)
 	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("HTTP %d", resp.StatusCode)
+	}
 	body, err := io.ReadAll(resp.Body)
-	resp.Body.Close()
 	if err != nil {
 		return nil, fmt.Errorf("reading response body: %w", err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
 	}
 
 	var catalog Catalog

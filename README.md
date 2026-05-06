@@ -20,7 +20,7 @@ bin/plcc2fbc [flags]
 |------|-------------|
 | `-o <file>` | Write FBC YAML to `<file>` instead of stdout |
 | `-i <file>` | Read PLCC JSON input from `<file>` instead of fetching from API |
-| `--dump-plcc <file>` | Write filtered PLCC JSON dump to `<file>` |
+| `-dump-plcc <file>` | Write filtered PLCC JSON dump to `<file>` |
 
 ## Generate FBC snapshot
 
