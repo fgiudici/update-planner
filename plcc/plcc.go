@@ -69,7 +69,8 @@ type ValidationResult struct {
 
 // Fetch retrieves the product catalog from the PLCC API.
 func Fetch() (*Catalog, error) {
-	resp, err := http.Get(APIURL)
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Get(APIURL)
 	if err != nil {
 		return nil, fmt.Errorf("HTTP request failed: %w", err)
 	}
