@@ -23,7 +23,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"sort"
 
 	"github.com/fgiudici/update-planner/fbc"
 	"github.com/fgiudici/update-planner/plcc"
@@ -80,56 +79,50 @@ func main() {
 func generateFBC(products []plcc.Product, output io.Writer, logOutput io.Writer) int {
 	pipeline := fbc.DefaultFilters()
 
-	type packageEntry struct {
-		product    plcc.Product
-		ambiguous  bool
-		otherNames []string
-	}
-	byPackage := make(map[string]*packageEntry)
+	// Detect packages that appear in multiple products.
+	isDuplicate := make(map[string]bool)
 	for _, p := range products {
-		if entry, ok := byPackage[p.Package]; ok {
-			entry.ambiguous = true
-			entry.otherNames = append(entry.otherNames, p.Name)
+		if _, ok := isDuplicate[p.Package]; ok {
+			isDuplicate[p.Package] = true
 		} else {
-			byPackage[p.Package] = &packageEntry{product: p}
+			isDuplicate[p.Package] = false
 		}
 	}
 
-	packageNames := make([]string, 0, len(byPackage))
-	for name := range byPackage {
-		packageNames = append(packageNames, name)
-	}
-	sort.Strings(packageNames)
-
 	logEnc := json.NewEncoder(logOutput)
+	alreadyLogged := make(map[string]bool)
 	blobCount := 0
-	for _, pkgName := range packageNames {
-		entry := byPackage[pkgName]
-
-		if entry.ambiguous {
-			logEnc.Encode(plcc.ValidationResult{
-				PackageName: pkgName,
-				Valid:       false,
-				Reasons:     []string{fmt.Sprintf("package appears in multiple products: %v", append([]string{entry.product.Name}, entry.otherNames...))},
-			})
+	for _, product := range products {
+		// Skip ambiguous packages.
+		if isDuplicate[product.Package] {
+			if !alreadyLogged[product.Package] {
+				logEnc.Encode(plcc.ValidationResult{
+					PackageName: product.Package,
+					Valid:       false,
+					Reasons:     []string{"package appears in multiple products"},
+				})
+				alreadyLogged[product.Package] = true
+			}
 			continue
 		}
 
-		pkg := fbc.NewPackage(entry.product)
+		// Translate PLCC product to FBC package, then filter and validate.
+		pkg := fbc.NewPackage(product)
 		reasons := pkg.Filter(pipeline...)
 		if len(reasons) > 0 {
 			logEnc.Encode(plcc.ValidationResult{
-				PackageName: pkgName,
+				PackageName: product.Package,
 				Valid:       false,
 				Reasons:     reasons,
 			})
 			continue
 		}
 
+		// Marshal and emit valid package as YAML.
 		yamlBytes, err := yaml.Marshal(pkg)
 		if err != nil {
 			logEnc.Encode(plcc.ValidationResult{
-				PackageName: pkgName,
+				PackageName: product.Package,
 				Valid:       false,
 				Reasons:     []string{fmt.Sprintf("failed to marshal YAML: %v", err)},
 			})
