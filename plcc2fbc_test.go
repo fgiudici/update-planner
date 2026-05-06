@@ -25,7 +25,9 @@ import (
 	"github.com/fgiudici/update-planner/plcc"
 )
 
-func TestGoldenFile(t *testing.T) {
+// TestReferenceFile runs the full pipeline on the reference PLCC testdata/plcc.json file.
+// The result is compared against the expected FBC file output (testdata/reference-fbc.yaml).
+func TestReferenceFile(t *testing.T) {
 	catalog, err := plcc.Load("testdata/plcc.json")
 	if err != nil {
 		t.Fatalf("loading PLCC test data: %v", err)
@@ -37,13 +39,13 @@ func TestGoldenFile(t *testing.T) {
 	var buf bytes.Buffer
 	generateFBC(catalog.Data, &buf, io.Discard)
 
-	want, err := os.ReadFile("testdata/golden-fbc.yaml")
+	want, err := os.ReadFile("testdata/reference-fbc.yaml")
 	if err != nil {
-		t.Fatalf("reading golden file: %v", err)
+		t.Fatalf("reading reference file: %v", err)
 	}
 
 	if buf.String() != string(want) {
-		t.Errorf("FBC output does not match golden file (got %d bytes, want %d bytes)", buf.Len(), len(want))
+		t.Errorf("FBC output does not match reference file (got %d bytes, want %d bytes)", buf.Len(), len(want))
 		os.WriteFile("testdata/actual-fbc.yaml", buf.Bytes(), 0644)
 		t.Log("actual output written to testdata/actual-fbc.yaml")
 	}
