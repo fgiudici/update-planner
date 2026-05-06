@@ -32,11 +32,11 @@ import (
 func main() {
 	var outputPath string
 	var plccDumpPath string
-	var plccInputPath string
+	var inputPath string
 
-	flag.StringVar(&outputPath, "output", "", "path to write FBC YAML output (default: stdout)")
-	flag.StringVar(&plccDumpPath, "plcc-dump", "", "path to write filtered PLCC entries (packages only) as JSON")
-	flag.StringVar(&plccInputPath, "plcc-input", "", "path to read PLCC JSON input (default: fetch from API)")
+	flag.StringVar(&outputPath, "o", "", "write FBC data to a file instead of stdout)")
+	flag.StringVar(&inputPath, "i", "", "read PLCC JSON input from a file instead of fetching from API")
+	flag.StringVar(&plccDumpPath, "dump-plcc", "", "dump filtered PLCC JSON to a file")
 	flag.Parse()
 
 	output := os.Stdout
@@ -51,8 +51,8 @@ func main() {
 
 	var catalog *plcc.Catalog
 	var err error
-	if plccInputPath != "" {
-		catalog, err = plcc.Load(plccInputPath)
+	if inputPath != "" {
+		catalog, err = plcc.Load(inputPath)
 	} else {
 		catalog, err = plcc.Fetch()
 	}
