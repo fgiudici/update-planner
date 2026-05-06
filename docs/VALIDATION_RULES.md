@@ -1,115 +1,158 @@
 # PLCC Data Validation Rules
 
-This document describes the rules that `generate-lifecycle-fbc` uses to validate data from the Red Hat Product Life Cycle Checker (PLCC) API before generating FBC (File-Based Catalog) lifecycle blobs.
-
-Validation is applied at three levels: **package**, **version**, and **phase**. A package is only emitted as an FBC blob if *all* of its versions and phases pass validation.
+This document describes the rules that `plcc2fbc` uses to validate data from the Red Hat Product Life Cycle Checker (PLCC) API before generating FBC (File-Based Catalog) lifecycle blobs.
 
 ---
 
-## Package-Level Rules
+## Overview
 
-### 1. Package name must be present
+After PLCC data is fetched and translated into FBC packages, each package passes through two stages:
 
-Products without a `package` field are silently discarded during the initial filtering step.
+1. **Pre-pipeline checks** (`generateFBC` in `plcc2fbc.go`): rules that **operate across all raw entries** (for invalid and duplicate detection).
+2. **Filter pipeline** (`fbc/filter.go`): an ordered sequence of `Filter` callbacks that can mutate, validate, or reject **a single package**.
 
-### 2. Package must contain at least one version
+A package is emitted as an FBC blob only if it passes both stages.
 
-If a product's `versions` array is empty, the package is rejected.
+The Filter pipeline is modular and easily extensible, see how in the ["Adding a New Filter" section](#adding-a-new-filter).
 
-### 3. Package must map to exactly one product
-
-If the same `package` value appears on multiple PLCC products, the package is marked **ambiguous** and rejected. The validation log lists all product names that share the package.
 
 ---
+### Pre-Pipeline Checks
 
-## Version-Level Rules
+The Pre-Pipeline checks operate across products rather than within a single package and are meant to ensure that the Package name is present and that it maps to exactly one product.
 
-### 4. Version name must be `MAJOR.MINOR`
-
-The version `name` must match the regex `^\d+\.\d+$` (e.g., `4.12`, `1.0`). Versions with patch components, pre-release suffixes, or any other format are rejected.
-
-### 5. OpenShift compatibility values must each be `MAJOR.MINOR`
-
-If the version has an `openshift_compatibility` field that is non-empty and not `"N/A"`:
-
-- The field is split on commas.
-- Each comma-separated value (after trimming whitespace) must independently match `^\d+\.\d+$`.
-- Empty segments (from trailing commas, etc.) are ignored.
-
-### 6. Version must have at least one valid normal phase after filtering
-
-After phase filtering (see below), the version must retain at least one normal phase. If all phases are discarded or invalid, the version is rejected.
+If the same `package` value appears on multiple PLCC products, the package is marked **ambiguous** and rejected.
 
 ---
+### Filter Pipeline
 
-## Phase-Level Rules
+The pipeline is defined by `DefaultFilters()` in `fbc/filter.go`. Each filter has the signature:
 
-Phases are first classified and filtered, then the surviving phases are validated for timestamp correctness and continuity.
+```go
+type Filter func(*Package) []string
+```
 
-### Phase Classification
+A filter can **mutate** the package (e.g., drop incomplete phases), **validate** it (e.g., check version names), or both. Returning a non-empty `[]string` rejects the package — the strings describe why. Returning `nil` means the package passes that step.
 
-Each phase in the PLCC data has a `start_date` and `end_date`. A date value is considered **unset** if it is empty (`""`) or `"N/A"`. Phases are classified into three categories:
+Filters run in order, and the pipeline **short-circuits**: the first filter that returns reasons stops execution. This means earlier filters can prepare data for later ones (e.g., removing incomplete phases before validating continuity).
 
-| Category | start_date | end_date | Handling |
+The default pipeline runs in this order:
+
+| # | Function | Kind | Purpose |
+|---|----------|------|---------|
+| 1 | `FilterPointInTimePhases` | validate | Reject packages with misaligned point-in-time phases |
+| 2 | `FilterIncompletePhases` | mutate | Drop phases where either date is empty |
+| 3 | `ValidateHasVersions` | validate | Reject packages with no versions |
+| 4 | `ValidateVersionNames` | validate | Reject packages with non-`MAJOR.MINOR` version names |
+| 5 | `ValidatePhases` | validate | Reject packages with empty dates, end <= begin, or non-contiguous phases |
+| 6 | `ValidateOCPCompatibility` | validate | Reject packages with non-`MAJOR.MINOR` OCP compatibility values |
+
+#### Step 1: `FilterPointInTimePhases`
+
+Phases are classified by their dates (after translation to FBC format, where unset dates become empty strings):
+
+| Category | `timeBegin` | `timeEnd` | Handling |
 |---|---|---|---|
-| **N/A phase** | unset | unset | Silently discarded |
-| **Normal phase** | set | set | Kept for validation and output |
-| **Point-in-time phase** | one set, one unset | | Subject to alignment rules (see below) |
+| **N/A phase** | empty | empty | Ignored by this filter |
+| **Complete phase** | set | set | Used as anchors |
+| **Point-in-time phase** | one set, one empty | | Subject to alignment rules below |
 
-### 7. Point-in-time phase alignment
+Point-in-time phases are allowed only in two positions:
 
-Point-in-time phases are phases where exactly one of `start_date` or `end_date` is unset. They are allowed only in two specific positions:
+- **Before the first complete phase**: `timeBegin` is empty, and `timeEnd` exactly equals the first complete phase's `timeBegin`.
+- **After the last complete phase**: `timeEnd` is empty, and `timeBegin` exactly equals the last complete phase's `timeEnd`.
 
-- **Before the first normal phase**: A point-in-time phase with an unset `start_date` is valid only if:
-  - Its original index in the phases array is before the first normal phase's index, AND
-  - Its `end_date` exactly equals the first normal phase's `start_date`.
+Any misaligned point-in-time phase **rejects the entire package**. If no complete phases or no point-in-time phases exist, this filter passes silently.
 
-- **After the last normal phase**: A point-in-time phase with an unset `end_date` is valid only if:
-  - Its original index in the phases array is after the last normal phase's index, AND
-  - Its `start_date` exactly equals the last normal phase's `end_date`.
+#### Step 2: `FilterIncompletePhases`
 
-Any point-in-time phase that does not meet these criteria causes the version to be rejected. Valid point-in-time phases are discarded from the output (they are not included in the FBC blob).
+Removes phases where either `timeBegin` or `timeEnd` is empty. This includes both N/A phases (both empty) and valid point-in-time phases that passed step 1.
 
-### 8. If only point-in-time phases remain (no normal phases), the version is rejected
+This filter always returns `nil` — it mutates the package but never rejects it.
 
-The error indicates "no normal phases (with both start and end set)".
+#### Step 3: `ValidateHasVersions`
 
-### 9. Timestamps must be valid ISO 8601
+Rejects the package if it has no versions.
 
-Both `start_date` and `end_date` on normal phases must parse as ISO 8601 timestamps in the format:
+#### Step 4: `ValidateVersionNames`
 
-```
-2006-01-02T15:04:05.000Z
-```
+Each version `name` must match the regex `^\d+\.\d+$` (e.g., `4.12`, `1.0`). Versions with patch components, pre-release suffixes, or any other format cause rejection.
 
-Values of `""` or `"N/A"` are treated as unset (caught earlier during filtering). Any other non-parseable value is rejected.
+#### Step 5: `ValidatePhases`
 
-### 10. End date must be strictly after start date
+For each version:
 
-For each normal phase, the parsed `end_date` must be strictly after (`>`) the parsed `start_date`. A phase where end equals start, or end is before start, is rejected.
+- There must be at least one phase (after filtering).
+- Each phase must have non-empty `timeBegin` and `timeEnd` (should already be guaranteed by step 2, but flagged as an error if found).
+- Each phase's `timeEnd` must be strictly after its `timeBegin`.
+- Consecutive phases must be **contiguous**: the `timeBegin` of phase N must be exactly one day after the `timeEnd` of phase N-1 (e.g., if phase 1 ends `2024-06-30`, phase 2 must begin `2024-07-01`).
 
-### 11. Phases must be contiguous (no gaps or overlaps)
+#### Step 6: `ValidateOCPCompatibility`
 
-For consecutive normal phases, the start date of phase N must be exactly **one day after** the end date of phase N-1.
-
-For example, if phase 1 ends on `2024-06-30`, phase 2 must start on `2024-07-01`. Any gap or overlap between adjacent phases causes the version to be rejected.
+For each version with an `openshift` platform compatibility entry, every version string must match `^\d+\.\d+$`.
 
 ---
 
-## Summary of rejection behavior
+## Summary of filtering behavior
 
-| Condition | Effect |
-|---|---|
-| Product has no `package` | Silently skipped |
-| Package has no versions | Package rejected |
-| Package maps to multiple products | Package rejected |
-| Any version in the package fails validation | Entire package rejected |
-| Version name not `MAJOR.MINOR` | Version rejected |
-| OCP compatibility entry not `MAJOR.MINOR` | Version rejected |
-| No normal phases after filtering | Version rejected |
-| Invalid point-in-time phase position/alignment | Version rejected |
-| Unparseable timestamp | Version rejected |
-| Phase end not after start | Version rejected |
-| Phase gap or overlap (not contiguous) | Version rejected |
+| Condition | Stage | Effect |
+|---|---|---|
+| Product has no `package` | Pre-pipeline | Silently skipped |
+| Package maps to multiple products | Pre-pipeline | Package rejected |
+| Misaligned point-in-time phase | Step 1 | Package rejected |
+| Package has no versions | Step 3 | Package rejected |
+| Version name not `MAJOR.MINOR` | Step 4 | Package rejected |
+| No phases in a version | Step 5 | Package rejected |
+| Phase end not after begin | Step 5 | Package rejected |
+| Phase gap or overlap (not contiguous) | Step 5 | Package rejected |
+| OCP compatibility entry not `MAJOR.MINOR` | Step 6 | Package rejected |
 
-All validation failures are logged as structured JSON to stderr with the `packageName`, `version` (if applicable), `valid: false`, and a `reasons` array describing each issue.
+All validation failures are logged as structured JSON to stderr with the `packageName`, `valid: false`, and a `reasons` array describing each issue.
+
+---
+
+
+## Adding a New Filter
+
+All filters live in `fbc/filter.go`. To add a new filter:
+
+1. **Write a new function** with signature `func(p *Package) []string`.
+    * Return a list of reason strings to reject the package or `nil` to accept it.
+    * Mutate the package `p` as needed (e.g., drop or rewrite data).
+
+2. **Add it to `DefaultFilters()`** at the appropriate position.
+    * Order matters: mutating filters (that prepare data) should run before validators (that check data).
+    * The pipeline short-circuits on the first rejection, so place stricter checks earlier if they make later checks meaningless.
+
+3. **Add a test** in `fbc/filter_test.go`.
+    * one test function per filter, with a few table-driven cases covering the accept and reject paths.
+
+### Example skeleton:
+
+```go
+func ValidateMyRule(p *Package) []string {
+    var reasons []string
+    for _, v := range p.Versions {
+        if !someCheck(v) {
+            reasons = append(reasons, fmt.Sprintf("version %q: failed my rule", v.Name))
+        }
+    }
+    return reasons
+}
+```
+
+Then in `DefaultFilters()`:
+
+```go
+return []Filter{
+    FilterPointInTimePhases,
+    FilterIncompletePhases,
+    ValidateHasVersions,
+    ValidateVersionNames,
+    ValidatePhases,
+    ValidateOCPCompatibility,
+    ValidateMyRule, // added
+}
+```
+
+Note: `DefaultFilters()` returns a fresh slice each time, so callers can safely append or reorder filters for custom pipelines without affecting the default.
