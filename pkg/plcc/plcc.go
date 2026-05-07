@@ -59,14 +59,6 @@ type Phase struct {
 	EndDate   string `json:"end_date"`
 }
 
-// ValidationResult records the outcome of validating a package or version.
-type ValidationResult struct {
-	PackageName string   `json:"packageName"`
-	Version     string   `json:"version,omitempty"`
-	Valid       bool     `json:"valid"`
-	Reasons     []string `json:"reasons,omitempty"`
-}
-
 // Fetch retrieves the product catalog from the PLCC API.
 func Fetch() (*Catalog, error) {
 	client := &http.Client{Timeout: 30 * time.Second}

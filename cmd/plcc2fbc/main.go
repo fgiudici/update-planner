@@ -17,16 +17,12 @@ limitations under the License.
 package main
 
 import (
-	"encoding/json"
 	"flag"
-	"fmt"
-	"io"
 	"log"
 	"os"
 
-	"github.com/fgiudici/update-planner/fbc"
-	"github.com/fgiudici/update-planner/plcc"
-	"sigs.k8s.io/yaml"
+	"github.com/fgiudici/update-planner/pkg/fbc"
+	"github.com/fgiudici/update-planner/pkg/plcc"
 )
 
 func main() {
@@ -72,65 +68,6 @@ func main() {
 		log.Printf("wrote %d PLCC entries to %s", catalog.Len(), plccDumpPath)
 	}
 
-	blobCount := generateFBC(catalog.Data, output, os.Stderr)
+	blobCount := fbc.GenerateFBC(catalog.Data, output, os.Stderr)
 	log.Printf("wrote %d FBC blobs", blobCount)
-}
-
-func generateFBC(products []plcc.Product, output io.Writer, logOutput io.Writer) int {
-	pipeline := fbc.DefaultFilters()
-
-	// Detect packages that appear in multiple products.
-	pkgCount := make(map[string]int)
-	for _, p := range products {
-		pkgCount[p.Package]++
-	}
-
-	logEnc := json.NewEncoder(logOutput)
-	alreadyLogged := make(map[string]bool)
-	blobCount := 0
-	for _, product := range products {
-		// Skip ambiguous packages.
-		if pkgCount[product.Package] > 1 {
-			if !alreadyLogged[product.Package] {
-				logEnc.Encode(plcc.ValidationResult{
-					PackageName: product.Package,
-					Valid:       false,
-					Reasons:     []string{"package appears in multiple products"},
-				})
-				alreadyLogged[product.Package] = true
-			}
-			continue
-		}
-
-		// Translate PLCC product to FBC package, then filter and validate.
-		pkg := fbc.NewPackage(product)
-		reasons := pkg.Filter(pipeline...)
-		if len(reasons) > 0 {
-			logEnc.Encode(plcc.ValidationResult{
-				PackageName: product.Package,
-				Valid:       false,
-				Reasons:     reasons,
-			})
-			continue
-		}
-
-		// Marshal and emit valid package as YAML.
-		yamlBytes, err := yaml.Marshal(pkg)
-		if err != nil {
-			logEnc.Encode(plcc.ValidationResult{
-				PackageName: product.Package,
-				Valid:       false,
-				Reasons:     []string{fmt.Sprintf("failed to marshal YAML: %v", err)},
-			})
-			continue
-		}
-
-		if blobCount > 0 {
-			fmt.Fprintln(output, "---")
-		}
-		fmt.Fprint(output, string(yamlBytes))
-		blobCount++
-	}
-
-	return blobCount
 }
