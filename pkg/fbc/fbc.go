@@ -48,8 +48,8 @@ type Version struct {
 // Phase represents a lifecycle phase with begin and end dates.
 type Phase struct {
 	Name      string `json:"name"`
-	TimeBegin string `json:"timeBegin"`
-	TimeEnd   string `json:"timeEnd"`
+	StartDate string `json:"startDate"`
+	EndDate   string `json:"endDate"`
 }
 
 // Platform represents platform compatibility information.
@@ -120,7 +120,7 @@ func translatePhase(ph plcc.Phase) Phase {
 	if t, err := plcc.ParseTimestamp(ph.EndDate); err == nil {
 		end = plcc.FormatDate(t)
 	}
-	return Phase{Name: ph.Name, TimeBegin: begin, TimeEnd: end}
+	return Phase{Name: ph.Name, StartDate: begin, EndDate: end}
 }
 
 // GenerateFBC converts PLCC products to FBC YAML, writing valid packages to output

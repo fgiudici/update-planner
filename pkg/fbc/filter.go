@@ -62,8 +62,8 @@ func FilterPointInTimePhases(p *Package) []string {
 		}
 		var complete, pointInTime []indexedPhase
 		for i, ph := range v.Phases {
-			beginEmpty := ph.TimeBegin == ""
-			endEmpty := ph.TimeEnd == ""
+			beginEmpty := ph.StartDate == ""
+			endEmpty := ph.EndDate == ""
 			switch {
 			case beginEmpty && endEmpty:
 				// not applicable, ignore
@@ -83,18 +83,18 @@ func FilterPointInTimePhases(p *Package) []string {
 
 		for _, pt := range pointInTime {
 			ph := pt.phase
-			if ph.TimeBegin == "" {
-				if pt.index < first.index && ph.TimeEnd == first.phase.TimeBegin {
+			if ph.StartDate == "" {
+				if pt.index < first.index && ph.EndDate == first.phase.StartDate {
 					continue
 				}
 				reasons = append(reasons, fmt.Sprintf("version %q phase %q: point-in-time (begin unset, end %s) not aligned with first phase begin (%s)",
-					v.Name, ph.Name, ph.TimeEnd, first.phase.TimeBegin))
+					v.Name, ph.Name, ph.EndDate, first.phase.StartDate))
 			} else {
-				if pt.index > last.index && ph.TimeBegin == last.phase.TimeEnd {
+				if pt.index > last.index && ph.StartDate == last.phase.EndDate {
 					continue
 				}
 				reasons = append(reasons, fmt.Sprintf("version %q phase %q: point-in-time (begin %s, end unset) not aligned with last phase end (%s)",
-					v.Name, ph.Name, ph.TimeBegin, last.phase.TimeEnd))
+					v.Name, ph.Name, ph.StartDate, last.phase.EndDate))
 			}
 		}
 	}
@@ -106,7 +106,7 @@ func FilterIncompletePhases(p *Package) []string {
 	for i := range p.Versions {
 		filtered := p.Versions[i].Phases[:0]
 		for _, ph := range p.Versions[i].Phases {
-			if ph.TimeBegin != "" && ph.TimeEnd != "" {
+			if ph.StartDate != "" && ph.EndDate != "" {
 				filtered = append(filtered, ph)
 			}
 		}
@@ -146,34 +146,34 @@ func ValidatePhases(p *Package) []string {
 
 		var validPhases []Phase
 		for _, ph := range v.Phases {
-			if ph.TimeBegin == "" {
+			if ph.StartDate == "" {
 				reasons = append(reasons, fmt.Sprintf("version %q phase %q: missing begin date", v.Name, ph.Name))
 			}
-			if ph.TimeEnd == "" {
+			if ph.EndDate == "" {
 				reasons = append(reasons, fmt.Sprintf("version %q phase %q: missing end date", v.Name, ph.Name))
 			}
-			if ph.TimeBegin == "" || ph.TimeEnd == "" {
+			if ph.StartDate == "" || ph.EndDate == "" {
 				continue
 			}
-			begin, errB := time.Parse("2006-01-02", ph.TimeBegin)
-			end, errE := time.Parse("2006-01-02", ph.TimeEnd)
+			begin, errB := time.Parse("2006-01-02", ph.StartDate)
+			end, errE := time.Parse("2006-01-02", ph.EndDate)
 			if errB != nil || errE != nil {
 				continue
 			}
 			if !end.After(begin) {
-				reasons = append(reasons, fmt.Sprintf("version %q phase %q: end (%s) is not after begin (%s)", v.Name, ph.Name, ph.TimeEnd, ph.TimeBegin))
+				reasons = append(reasons, fmt.Sprintf("version %q phase %q: end (%s) is not after begin (%s)", v.Name, ph.Name, ph.EndDate, ph.StartDate))
 				continue
 			}
 			validPhases = append(validPhases, ph)
 		}
 
 		for i := 1; i < len(validPhases); i++ {
-			prevEnd, _ := time.Parse("2006-01-02", validPhases[i-1].TimeEnd)
-			currBegin, _ := time.Parse("2006-01-02", validPhases[i].TimeBegin)
+			prevEnd, _ := time.Parse("2006-01-02", validPhases[i-1].EndDate)
+			currBegin, _ := time.Parse("2006-01-02", validPhases[i].StartDate)
 			expectedBegin := prevEnd.AddDate(0, 0, 1)
 			if !currBegin.Equal(expectedBegin) {
 				reasons = append(reasons, fmt.Sprintf("version %q phase %q: begin (%s) must be one day after previous phase %q end (%s)",
-					v.Name, validPhases[i].Name, validPhases[i].TimeBegin, validPhases[i-1].Name, validPhases[i-1].TimeEnd))
+					v.Name, validPhases[i].Name, validPhases[i].StartDate, validPhases[i-1].Name, validPhases[i-1].EndDate))
 			}
 		}
 	}

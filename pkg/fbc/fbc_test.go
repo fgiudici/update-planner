@@ -80,11 +80,11 @@ func TestNewPackageUnparseableTimestamp(t *testing.T) {
 	pkg := NewPackage(product)
 	ph := pkg.Versions[0].Phases[0]
 
-	if ph.TimeBegin != "" {
-		t.Errorf("expected empty TimeBegin for N/A, got %q", ph.TimeBegin)
+	if ph.StartDate != "" {
+		t.Errorf("expected empty StartDate for N/A, got %q", ph.StartDate)
 	}
-	if ph.TimeEnd != "2025-01-01" {
-		t.Errorf("TimeEnd = %q, want %q", ph.TimeEnd, "2025-01-01")
+	if ph.EndDate != "2025-01-01" {
+		t.Errorf("EndDate = %q, want %q", ph.EndDate, "2025-01-01")
 	}
 }
 

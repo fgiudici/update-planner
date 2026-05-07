@@ -55,27 +55,27 @@ versions:
       #   additionalText: ""                           # [UNMAPPED] per-phase notes
 
       - name: "Full support"                           # [MAPPED]
-        timeBegin: "2023-01-17"                        # [MAPPED] reformatted from ISO 8601
-        timeEnd: "2023-08-17"                          # [MAPPED] reformatted from ISO 8601
+        startDate: "2023-01-17"                        # [MAPPED] reformatted from ISO 8601
+        endDate: "2023-08-17"                          # [MAPPED] reformatted from ISO 8601
         # startDateFormat: "date"                      # [UNMAPPED] date format indicator
         # endDateFormat: "date"                        # [UNMAPPED] date format indicator
         # additionalText: ""                           # [UNMAPPED] per-phase notes
 
       - name: "Maintenance support"                    # [MAPPED]
-        timeBegin: "2023-08-18"                        # [MAPPED]
-        timeEnd: "2024-07-17"                          # [MAPPED]
+        startDate: "2023-08-18"                        # [MAPPED]
+        endDate: "2024-07-17"                          # [MAPPED]
 
       - name: "Extended update support"                # [MAPPED]
-        timeBegin: "2024-07-18"                        # [MAPPED]
-        timeEnd: "2025-01-17"                          # [MAPPED]
+        startDate: "2024-07-18"                        # [MAPPED]
+        endDate: "2025-01-17"                          # [MAPPED]
 
       - name: "Extended update support Term 2"         # [MAPPED]
-        timeBegin: "2025-01-18"                        # [MAPPED]
-        timeEnd: "2026-01-17"                          # [MAPPED]
+        startDate: "2025-01-18"                        # [MAPPED]
+        endDate: "2026-01-17"                          # [MAPPED]
 
       - name: "Extended update support Term 3"         # [MAPPED]
-        timeBegin: "2026-01-18"                        # [MAPPED]
-        timeEnd: "2027-01-17"                          # [MAPPED]
+        startDate: "2026-01-18"                        # [MAPPED]
+        endDate: "2027-01-17"                          # [MAPPED]
 
   # Version 4.17 — non-EUS release (EUS phases filtered out as N/A-N/A)
   - name: "4.17"                                       # [MAPPED]
@@ -92,12 +92,12 @@ versions:
       # "Extended update support Term 3" — filtered out (N/A-N/A)
 
       - name: "Full support"                           # [MAPPED]
-        timeBegin: "2024-10-01"                        # [MAPPED]
-        timeEnd: "2025-05-25"                          # [MAPPED]
+        startDate: "2024-10-01"                        # [MAPPED]
+        endDate: "2025-05-25"                          # [MAPPED]
 
       - name: "Maintenance support"                    # [MAPPED]
-        timeBegin: "2025-05-26"                        # [MAPPED]
-        timeEnd: "2026-04-01"                          # [MAPPED]
+        startDate: "2025-05-26"                        # [MAPPED]
+        endDate: "2026-04-01"                          # [MAPPED]
 
   # Version 4.20 — current, in full support, partial EUS
   - name: "4.20"                                       # [MAPPED]
@@ -112,17 +112,17 @@ versions:
       # "Extended update support Term 3" — filtered out (N/A-N/A)
 
       - name: "Full support"                           # [MAPPED]
-        timeBegin: "2025-10-21"                        # [MAPPED]
-        timeEnd: "2026-05-03"                          # [MAPPED]
+        startDate: "2025-10-21"                        # [MAPPED]
+        endDate: "2026-05-03"                          # [MAPPED]
 
       - name: "Maintenance support"                    # [MAPPED]
-        timeBegin: "2026-05-03"                        # [MAPPED]
-        timeEnd: "2027-04-21"                          # [MAPPED]
+        startDate: "2026-05-03"                        # [MAPPED]
+        endDate: "2027-04-21"                          # [MAPPED]
 
       - name: "Extended update support"                # [MAPPED]
-        timeBegin: "2027-04-22"                        # [MAPPED]
-        timeEnd: "2027-10-21"                          # [MAPPED]
+        startDate: "2027-04-22"                        # [MAPPED]
+        endDate: "2027-10-21"                          # [MAPPED]
 
       - name: "Extended update support Term 2"         # [MAPPED]
-        timeBegin: "2027-10-22"                        # [MAPPED]
-        timeEnd: "2028-10-21"                          # [MAPPED]
+        startDate: "2027-10-22"                        # [MAPPED]
+        endDate: "2028-10-21"                          # [MAPPED]
