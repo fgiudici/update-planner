@@ -8,8 +8,8 @@ This document describes the rules that `plcc2fbc` uses to validate data from the
 
 After PLCC data is fetched and translated into FBC packages, each package passes through two stages:
 
-1. **Pre-pipeline checks** (`generateFBC` in `plcc2fbc.go`): rules that **operate across all raw entries** (for invalid and duplicate detection).
-2. **Filter pipeline** (`fbc/filter.go`): an ordered sequence of `Filter` callbacks that can mutate, validate, or reject **a single package**.
+1. **Pre-pipeline checks** (`GenerateFBC` in `pkg/fbc/fbc.go`): rules that **operate across all raw entries** (for invalid and duplicate detection).
+2. **Filter pipeline** (`pkg/fbc/filter.go`): an ordered sequence of `Filter` callbacks that can mutate, validate, or reject **a single package**.
 
 A package is emitted as an FBC blob only if it passes both stages.
 
@@ -26,7 +26,7 @@ If the same `package` value appears on multiple PLCC products, the package is ma
 ---
 ### Filter Pipeline
 
-The pipeline is defined by `DefaultFilters()` in `fbc/filter.go`. Each filter has the signature:
+The pipeline is defined by `DefaultFilters()` in `pkg/fbc/filter.go`. Each filter has the signature:
 
 ```go
 type Filter func(*Package) []string
@@ -114,7 +114,7 @@ All validation failures are logged as structured JSON to stderr with the `packag
 
 ## Adding a New Filter
 
-All filters live in `fbc/filter.go`. To add a new filter:
+All filters live in `pkg/fbc/filter.go`. To add a new filter:
 
 1. **Write a new function** with signature `func(p *Package) []string`.
     * Return a list of reason strings to reject the package or `nil` to accept it.
@@ -124,7 +124,7 @@ All filters live in `fbc/filter.go`. To add a new filter:
     * Order matters: mutating filters (that prepare data) should run before validators (that check data).
     * The pipeline short-circuits on the first rejection, so place stricter checks earlier if they make later checks meaningless.
 
-3. **Add a test** in `fbc/filter_test.go`.
+3. **Add a test** in `pkg/fbc/filter_test.go`.
     * one test function per filter, with a few table-driven cases covering the accept and reject paths.
 
 ### Example skeleton:
