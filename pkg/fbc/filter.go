@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/fgiudici/update-planner/plcc"
+	"github.com/fgiudici/update-planner/pkg/plcc"
 )
 
 // Filter is a pipeline callback that can mutate a Package, validate it, or both.

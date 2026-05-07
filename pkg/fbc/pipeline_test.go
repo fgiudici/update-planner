@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package fbc
 
 import (
 	"bytes"
@@ -22,7 +22,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/fgiudici/update-planner/plcc"
+	"github.com/fgiudici/update-planner/pkg/plcc"
 )
 
 // TestReferenceFile runs the full pipeline on the reference PLCC testdata/plcc.json file.
@@ -37,7 +37,7 @@ func TestReferenceFile(t *testing.T) {
 	catalog.SortByPackage()
 
 	var buf bytes.Buffer
-	generateFBC(catalog.Data, &buf, io.Discard)
+	GenerateFBC(catalog.Data, &buf, io.Discard)
 
 	want, err := os.ReadFile("testdata/reference-fbc.yaml")
 	if err != nil {

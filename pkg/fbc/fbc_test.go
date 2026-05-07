@@ -19,7 +19,7 @@ package fbc
 import (
 	"testing"
 
-	"github.com/fgiudici/update-planner/plcc"
+	"github.com/fgiudici/update-planner/pkg/plcc"
 )
 
 func TestNewPackage(t *testing.T) {

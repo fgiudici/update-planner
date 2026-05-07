@@ -6,7 +6,7 @@ build: plcc2fbc
 
 .PHONY: plcc2fbc
 plcc2fbc:
-	go build $(GOFLAGS) -o bin/plcc2fbc 
+	go build $(GOFLAGS) -o bin/plcc2fbc ./cmd/plcc2fbc
 
 .PHONY: test
 test:
