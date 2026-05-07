@@ -13,8 +13,8 @@ versions:
   - name: <string>
     phases:
       - name: <string>
-        timeBegin: <string>
-        timeEnd: <string>
+        startDate: <string>
+        endDate: <string>
     platformCompatibility:
       - name: <string>
         versions:
@@ -42,8 +42,8 @@ versions:
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `name` | string | yes | Phase name (e.g., `Full support`, `Maintenance support`). |
-| `timeBegin` | string | yes | Start date in `YYYY-MM-DD` format. |
-| `timeEnd` | string | yes | End date in `YYYY-MM-DD` format. Must be strictly after `timeBegin`. |
+| `startDate` | string | yes | Start date in `YYYY-MM-DD` format. |
+| `endDate` | string | yes | End date in `YYYY-MM-DD` format. Must be strictly after `startDate`. |
 
 ### Phase Continuity
 
@@ -61,42 +61,42 @@ The `platformCompatibility` structure is designed to support multiple platforms.
 ## Example
 
 ```yaml
-schema: io.openshift.operators.lifecycles.v1alpha1
 package: aws-efs-csi-driver-operator
+schema: io.openshift.operators.lifecycles.v1alpha1
 versions:
-  - name: "4.12"
-    phases:
-      - name: Full support
-        timeBegin: "2023-01-17"
-        timeEnd: "2023-08-17"
-      - name: Maintenance support
-        timeBegin: "2023-08-18"
-        timeEnd: "2024-07-17"
-      - name: Extended update support
-        timeBegin: "2024-07-18"
-        timeEnd: "2025-01-17"
-      - name: Extended update support Term 2
-        timeBegin: "2025-01-18"
-        timeEnd: "2026-01-17"
-      - name: Extended update support Term 3
-        timeBegin: "2026-01-18"
-        timeEnd: "2027-01-17"
-    platformCompatibility:
-      - name: openshift
-        versions:
-          - "4.12"
-  - name: "4.17"
-    phases:
-      - name: Full support
-        timeBegin: "2024-10-01"
-        timeEnd: "2025-05-25"
-      - name: Maintenance support
-        timeBegin: "2025-05-26"
-        timeEnd: "2026-04-01"
-    platformCompatibility:
-      - name: openshift
-        versions:
-          - "4.17"
+- name: "4.12"
+  phases:
+  - endDate: "2023-08-17"
+    name: Full support
+    startDate: "2023-01-17"
+  - endDate: "2024-07-17"
+    name: Maintenance support
+    startDate: "2023-08-18"
+  - endDate: "2025-01-17"
+    name: Extended update support
+    startDate: "2024-07-18"
+  - endDate: "2026-01-17"
+    name: Extended update support Term 2
+    startDate: "2025-01-18"
+  - endDate: "2027-01-17"
+    name: Extended update support Term 3
+    startDate: "2026-01-18"
+  platformCompatibility:
+  - name: openshift
+    versions:
+    - "4.12"
+- name: "4.17"
+  phases:
+  - endDate: "2025-05-25"
+    name: Full support
+    startDate: "2024-10-01"
+  - endDate: "2026-04-01"
+    name: Maintenance support
+    startDate: "2025-05-26"
+  platformCompatibility:
+  - name: openshift
+    versions:
+    - "4.17"
 ```
 
 ## Data Source

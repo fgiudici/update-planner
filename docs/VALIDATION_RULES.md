@@ -51,7 +51,7 @@ The default pipeline runs in this order:
 
 Phases are classified by their dates (after translation to FBC format, where unset dates become empty strings):
 
-| Category | `timeBegin` | `timeEnd` | Handling |
+| Category | `startDate` | `endDate` | Handling |
 |---|---|---|---|
 | **N/A phase** | empty | empty | Ignored by this filter |
 | **Complete phase** | set | set | Used as anchors |
@@ -59,14 +59,14 @@ Phases are classified by their dates (after translation to FBC format, where uns
 
 Point-in-time phases are allowed only in two positions:
 
-- **Before the first complete phase**: `timeBegin` is empty, and `timeEnd` exactly equals the first complete phase's `timeBegin`.
-- **After the last complete phase**: `timeEnd` is empty, and `timeBegin` exactly equals the last complete phase's `timeEnd`.
+- **Before the first complete phase**: `startDate` is empty, and `endDate` exactly equals the first complete phase's `startDate`.
+- **After the last complete phase**: `endDate` is empty, and `startDate` exactly equals the last complete phase's `endDate`.
 
 Any misaligned point-in-time phase **rejects the entire package**. If no complete phases or no point-in-time phases exist, this filter passes silently.
 
 #### Step 2: `FilterIncompletePhases`
 
-Removes phases where either `timeBegin` or `timeEnd` is empty. This includes both N/A phases (both empty) and valid point-in-time phases that passed step 1.
+Removes phases where either `startDate` or `endDate` is empty. This includes both N/A phases (both empty) and valid point-in-time phases that passed step 1.
 
 This filter always returns `nil` — it mutates the package but never rejects it.
 
@@ -83,9 +83,9 @@ Each version `name` must match the regex `^\d+\.\d+$` (e.g., `4.12`, `1.0`). Ver
 For each version:
 
 - There must be at least one phase (after filtering).
-- Each phase must have non-empty `timeBegin` and `timeEnd` (should already be guaranteed by step 2, but flagged as an error if found).
-- Each phase's `timeEnd` must be strictly after its `timeBegin`.
-- Consecutive phases must be **contiguous**: the `timeBegin` of phase N must be exactly one day after the `timeEnd` of phase N-1 (e.g., if phase 1 ends `2024-06-30`, phase 2 must begin `2024-07-01`).
+- Each phase must have non-empty `startDate` and `endDate` (should already be guaranteed by step 2, but flagged as an error if found).
+- Each phase's `endDate` must be strictly after its `startDate`.
+- Consecutive phases must be **contiguous**: the `startDate` of phase N must be exactly one day after the `endDate` of phase N-1 (e.g., if phase 1 ends `2024-06-30`, phase 2 must begin `2024-07-01`).
 
 #### Step 6: `ValidateOCPCompatibility`
 

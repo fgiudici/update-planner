@@ -57,8 +57,8 @@ func TestFilterPointInTimePhases(t *testing.T) {
 			pkg: Package{Versions: []Version{{
 				Name: "1.0",
 				Phases: []Phase{
-					{Name: "GA", TimeBegin: "", TimeEnd: "2025-01-01"},
-					{Name: "Full support", TimeBegin: "2025-01-01", TimeEnd: "2025-12-31"},
+					{Name: "GA", StartDate: "", EndDate: "2025-01-01"},
+					{Name: "Full support", StartDate: "2025-01-01", EndDate: "2025-12-31"},
 				},
 			}}},
 			wantOK: true,
@@ -68,8 +68,8 @@ func TestFilterPointInTimePhases(t *testing.T) {
 			pkg: Package{Versions: []Version{{
 				Name: "1.0",
 				Phases: []Phase{
-					{Name: "Full support", TimeBegin: "2025-01-01", TimeEnd: "2025-12-31"},
-					{Name: "EOL", TimeBegin: "2025-12-31", TimeEnd: ""},
+					{Name: "Full support", StartDate: "2025-01-01", EndDate: "2025-12-31"},
+					{Name: "EOL", StartDate: "2025-12-31", EndDate: ""},
 				},
 			}}},
 			wantOK: true,
@@ -79,8 +79,8 @@ func TestFilterPointInTimePhases(t *testing.T) {
 			pkg: Package{Versions: []Version{{
 				Name: "1.0",
 				Phases: []Phase{
-					{Name: "GA", TimeBegin: "", TimeEnd: "2025-03-01"},
-					{Name: "Full support", TimeBegin: "2025-01-01", TimeEnd: "2025-12-31"},
+					{Name: "GA", StartDate: "", EndDate: "2025-03-01"},
+					{Name: "Full support", StartDate: "2025-01-01", EndDate: "2025-12-31"},
 				},
 			}}},
 			wantOK: false,
@@ -90,8 +90,8 @@ func TestFilterPointInTimePhases(t *testing.T) {
 			pkg: Package{Versions: []Version{{
 				Name: "1.0",
 				Phases: []Phase{
-					{Name: "Full support", TimeBegin: "2025-01-01", TimeEnd: "2025-12-31"},
-					{Name: "EOL", TimeBegin: "2026-03-01", TimeEnd: ""},
+					{Name: "Full support", StartDate: "2025-01-01", EndDate: "2025-12-31"},
+					{Name: "EOL", StartDate: "2026-03-01", EndDate: ""},
 				},
 			}}},
 			wantOK: false,
@@ -111,9 +111,9 @@ func TestFilterIncompletePhases(t *testing.T) {
 	pkg := &Package{Versions: []Version{{
 		Name: "1.0",
 		Phases: []Phase{
-			{Name: "GA", TimeBegin: "", TimeEnd: "2025-01-01"},
-			{Name: "Full support", TimeBegin: "2025-01-01", TimeEnd: "2025-12-31"},
-			{Name: "EOL", TimeBegin: "2025-12-31", TimeEnd: ""},
+			{Name: "GA", StartDate: "", EndDate: "2025-01-01"},
+			{Name: "Full support", StartDate: "2025-01-01", EndDate: "2025-12-31"},
+			{Name: "EOL", StartDate: "2025-12-31", EndDate: ""},
 		},
 	}}}
 
@@ -162,8 +162,8 @@ func TestValidatePhases(t *testing.T) {
 			pkg: Package{Versions: []Version{{
 				Name: "1.0",
 				Phases: []Phase{
-					{Name: "Full support", TimeBegin: "2025-01-01", TimeEnd: "2025-06-30"},
-					{Name: "Maintenance", TimeBegin: "2025-07-01", TimeEnd: "2025-12-31"},
+					{Name: "Full support", StartDate: "2025-01-01", EndDate: "2025-06-30"},
+					{Name: "Maintenance", StartDate: "2025-07-01", EndDate: "2025-12-31"},
 				},
 			}}},
 			wantOK: true,
@@ -173,8 +173,8 @@ func TestValidatePhases(t *testing.T) {
 			pkg: Package{Versions: []Version{{
 				Name: "1.0",
 				Phases: []Phase{
-					{Name: "Full support", TimeBegin: "2025-01-01", TimeEnd: "2025-06-30"},
-					{Name: "Maintenance", TimeBegin: "2025-08-01", TimeEnd: "2025-12-31"},
+					{Name: "Full support", StartDate: "2025-01-01", EndDate: "2025-06-30"},
+					{Name: "Maintenance", StartDate: "2025-08-01", EndDate: "2025-12-31"},
 				},
 			}}},
 			wantOK: false,
@@ -184,7 +184,7 @@ func TestValidatePhases(t *testing.T) {
 			pkg: Package{Versions: []Version{{
 				Name: "1.0",
 				Phases: []Phase{
-					{Name: "Full support", TimeBegin: "2025-12-31", TimeEnd: "2025-01-01"},
+					{Name: "Full support", StartDate: "2025-12-31", EndDate: "2025-01-01"},
 				},
 			}}},
 			wantOK: false,
